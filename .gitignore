@@ -1,0 +1,6 @@
+build/
+bin/
+src/vdtMath_signatures.cc
+include/externalLibcfg.h
+
+.vscode/

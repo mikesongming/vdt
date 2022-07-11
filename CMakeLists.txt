@@ -1,6 +1,11 @@
 # VDT Math Library
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15)
 project (Vdt)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+include(CMakePrintHelpers)
 
 #-------------------------------------------------------------------------------
 # Include the defaults
@@ -51,41 +56,44 @@ endif()
 # SIMD and FMA instructions set-------------------------------------------------
 if (NEON)
   message(STATUS "Using NEON instructions!")
-  set(PACKED_INSTR "-mfpu=neon ")
+  string(APPEND vdt_common_cxx_flags " -mfpu=neon")
 else()
   if (SSE AND (NOT (AVX OR AVX2) ))
     message(STATUS "Using SSE instructions!")
-    set(PACKED_INSTR "-msse")
+    string(APPEND vdt_common_cxx_flags " -msse")
   endif ()
 
   if (AVX AND (NOT AVX2))
     message(STATUS "Using AVX instructions!")
-    set (PACKED_INSTR "-mavx")
     if(CMAKE_COMPILER_IS_ICC)
-      set(PACKED_INSTR "-xavx")
+      string(APPEND vdt_common_cxx_flags " -xavx")
+    else()
+      string(APPEND vdt_common_cxx_flags " -mavx")
     endif()
   endif ()
 
   if (AVX2)
     message(STATUS "Using AVX2 instructions!")
-    set (PACKED_INSTR "-mavx2")
     if(CMAKE_COMPILER_IS_ICC)
-      set(PACKED_INSTR "-xavx2")
+      string(APPEND vdt_common_cxx_flags " -xavx2")
+    else()
+      string(APPEND vdt_common_cxx_flags " -mavx2")
     endif()
   endif ()
 
   if (FMA)
     message(STATUS "Using FMA instructions!")
-    set (FMA_INSTR "-mfma")
+    string(APPEND vdt_common_cxx_flags " -mfma")
   endif ()
 
 endif()
 
 # To use svml at CERN ----------------------------------------------------------
-set (INTEL_SVML_FLAGS "")
 if (SVML)
   message (STATUS "Linking SVML library")
-  set (INTEL_SVML_FLAGS "-mveclibabi=svml -L/afs/cern.ch/sw/IntelSoftware/linux/x86_64/Compiler/11.1/072/lib/intel64/ -lsvml -lirc")
+  string(APPEND vdt_common_cxx_flags
+    " -mveclibabi=svml -lsvml -lirc"
+    " -L/afs/cern.ch/sw/IntelSoftware/linux/x86_64/Compiler/11.1/072/lib/intel64/")
 endif (SVML)
 
 # Vc setup ---------------------------------------------------------------------
@@ -111,7 +119,6 @@ if(USE_VC)
     endif(NOT EXISTS ${VC_HEADER_NAME})
   endif(EXISTS ${VC_LIB_NAME})
 
-
   link_directories( ${CMAKE_SOURCE_DIR}/Vc )
 endif(USE_VC)
 
@@ -121,98 +128,60 @@ if(DIAG)
   set (LIBTIMING "rt")
   # do not set it if on macOS
   if (APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
-    set (LIBTIMINGAPPLE "-framework Carbon")
+    set (LIBTIMINGAPPLE " -framework Carbon")
   endif ()
 endif(DIAG)
 
 #-------------------------------------------------------------------------------
 # Compiler optimisations
 
-set (VECT_OPT "-Ofast")
-if (CMAKE_COMPILER_IS_ICC)
-  set (VECT_OPT "")
+if (NOT CMAKE_COMPILER_IS_ICC)
+  string(APPEND vdt_common_cxx_flags " -Ofast")
 endif()
 
 if (${COMP_IS_GCC})
    set (VECTORIZER_VERBOSITY "-ftree-vectorizer-verbose=0")
-   set (INLINE_OPT " --param vect-max-version-for-alias-checks=50 --param inline-unit-growth=150")   
+   string(APPEND vdt_common_cxx_flags " --param vect-max-version-for-alias-checks=50"
+   " --param inline-unit-growth=150")   
 endif()   
 
-set (CPP11_OPT "-std=c++11")
-set (VERBOSITY_OPT "-Winline")
+set (VERBOSITY_OPT " -Winline")
 
 # set it for clang until it understands __always_inline
-set (CLANG_INLINE_DEFINE "")
 if (${COMP_IS_CLANG})
- set (CLANG_INLINE_DEFINE "-D__extern_always_inline=inline")
+  string(APPEND vdt_common_cxx_flags " -D__extern_always_inline=inline")
 endif()
 
 # compiler dependent changes ---------------------------------------------------
 if(${COMP_IS_ICC})
   set (VECTORIZER_VERBOSITY "")
-  set (INLINE_OPT "")
 endif()
 
-set (WARNING_FLAGS "-W -Wall -Werror -Wno-error=unused-parameter")
+string(APPEND vdt_common_cxx_flags " -W" " -Wall" " -Werror"
+  " -Wno-error=unused-parameter")
 
 if (DEBUG)
-  set (DEBUG_FLAGS " -g")
   message(STATUS "Adding debugging symbols")
+  string(APPEND vdt_common_cxx_flags " -g")
 endif ()
 
-
-set (COMMON_FLAGS "${CPP11_OPT} ${INTEL_SVML_FLAGS} ${PACKED_INSTR} ${FMA_INSTR} ${INLINE_OPT} ${WARNING_FLAGS} ${DEBUG_FLAGS} ${CLANG_INLINE_DEFINE}")
+set (COMMON_FLAGS "${PACKED_INSTR}")
 if (USERFLAGS)
-  set (COMMON_FLAGS "${COMMON_FLAGS} ${USERFLAGS}")
+  string(APPEND vdt_common_cxx_flags ${USERFLAGS})
 endif()
-set (LIB_FLAGS "${VERBOSITY_OPT} ${VECT_OPT} ${VECTORIZER_VERBOSITY} ${COMMON_FLAGS}")
-set (DIAG_FLAGS "${LIBTIMINGAPPLE} ${VECT_OPT} ${COMMON_FLAGS}")
+
+string(APPEND vdt_lib_cxx_flags ${VERBOSITY_OPT} ${VECTORIZER_VERBOSITY} ${vdt_common_cxx_flags})
+string(APPEND vdt_diag_cxx_flags ${LIBTIMINGAPPLE} ${vdt_common_cxx_flags})
 
 # Locations ====================================================================
-# Location of executables
-set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin )
-
-# Location of sources
-set( SRC_DIR ${CMAKE_SOURCE_DIR}/src )
-
-# Location of library
-set( LIB_DIR ${CMAKE_SOURCE_DIR}/lib )
-
-# Common Includes
-set (INC_DIR ${CMAKE_SOURCE_DIR}/include )
 
 
 #-------------------------------------------------------------------------------
 
 add_subdirectory( src )
-add_subdirectory( lib )
 if (DIAG)
     message("DIAG option is now on, building diagnostic programs")
     add_subdirectory( progs )
-    add_subdirectory( progs/units )
 else(DIAG)
   message("DIAG option is now off, building library only")
 endif(DIAG)
-
-#-------------------------------------------------------------------------------
-# Installation
-
-# Install location
-INSTALL(FILES
-        include/asin.h
-        include/atan.h
-        include/tanh.h
-        include/atan2.h
-        include/cos.h
-        include/exp.h
-        include/identity.h
-        include/inv.h
-        include/log.h
-        include/sincos.h
-        include/sin.h
-        include/sqrt.h
-        include/tan.h
-        include/vdtcore_common.h
-        include/vdtMath.h
-        DESTINATION include/vdt)
-
