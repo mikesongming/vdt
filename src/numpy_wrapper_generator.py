@@ -256,9 +256,8 @@ def create_python():
       for fcn_name in sorted(FUNCTIONS_LIST):
         code+=get_python_function(fcn_name,is_double,is_vector)
 
-  ofile=file(VDT_PYTHON_MODULE,'w')
-  ofile.write(code)
-  ofile.close()
+  with open(VDT_PYTHON_MODULE,'w') as ofile:
+    ofile.write(code)
 
 #------------------------------------------------------------------
 
@@ -296,9 +295,8 @@ def create_numpy_header():
   code+=data+fname+fdoc;
 
 
-  ofile=file(VDT_NUMPY_WRAPPER_HEADER,'w')
-  ofile.write(code)
-  ofile.close()
+  with open(VDT_NUMPY_WRAPPER_HEADER,'w') as ofile:
+    ofile.write(code)
 
 
 #------------------------------------------------------------------   
@@ -332,16 +330,14 @@ def get_impl_file():
 #------------------------------------------------------------------
 
 def create_header():
-  ofile=file(VDT_WRAPPER_HEADER,'w')
-  ofile.write(get_header_file())
-  ofile.close()
+  with open(VDT_WRAPPER_HEADER,'w') as ofile:
+    ofile.write(get_header_file())
   
 #------------------------------------------------------------------
 
 def create_impl():
-  ofile=file(VDT_WRAPPER_IMPL,'w')
-  ofile.write(get_impl_file())
-  ofile.close()
+  with open(VDT_WRAPPER_IMPL,'w') as ofile:
+    ofile.write(get_impl_file())
 
 #------------------------------------------------------------------
   
