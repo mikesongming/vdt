@@ -177,10 +177,11 @@ cmake_print_variables(vdt_common_cxx_flags)
 cmake_print_variables(vdt_lib_cxx_flags)
 cmake_print_variables(vdt_diag_cxx_flags)
 
-# Locations ====================================================================
-
-
 #-------------------------------------------------------------------------------
+
+# Positions
+set(vdt_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(vdt_BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 add_subdirectory( src )
 if (DIAG)
@@ -189,3 +190,29 @@ if (DIAG)
 else(DIAG)
   message("DIAG option is now off, building library only")
 endif(DIAG)
+
+#-------------------------------------------------------------------------------
+# Installation
+
+# Installation of the lib
+install(TARGETS vdt  
+        DESTINATION lib)
+
+# Install location
+INSTALL(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/asin.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/atan.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/tanh.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/atan2.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/cos.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/exp.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/identity.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/inv.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/log.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/sincos.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/sin.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/sqrt.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/tan.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/vdtcore_common.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/vdtMath.h
+        DESTINATION include/vdt)

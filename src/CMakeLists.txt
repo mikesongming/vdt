@@ -32,8 +32,7 @@ if(USE_VC)
     )
 endif(USE_VC)
 
-configure_file( ${CMAKE_SOURCE_DIR}/include/externalLibcfg.h.in
-  ${CMAKE_SOURCE_DIR}/include/externalLibcfg.h)
+configure_file( ${vdt_INCLUDE_DIR}/externalLibcfg.h.in ${vdt_INCLUDE_DIR}/externalLibcfg.h)
 
 #========================================================================================
 # Rules for making the so library with the vector and libm-like signatures
@@ -45,7 +44,7 @@ else()
   add_library(vdt STATIC ${CMAKE_CURRENT_LIST_DIR}/vdtMath_signatures.cc)
 endif()
 
-target_include_directories(vdt PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(vdt PUBLIC ${vdt_INCLUDE_DIR})
 
 # Build Vc wrapper (without c++11)
 if(USE_VC)
@@ -58,29 +57,3 @@ if(USE_VC)
       PUBLIC ${CMAKE_SOURCE_DIR}/Vc/include )
     target_link_libraries(VcWrapper libVc.a)
 endif()
-
-#-------------------------------------------------------------------------------
-# Installation
-
-# Installation of the lib
-install(TARGETS vdt  
-        DESTINATION lib)
-
-# Install location
-INSTALL(FILES
-        ${CMAKE_SOURCE_DIR}/include/asin.h
-        ${CMAKE_SOURCE_DIR}/include/atan.h
-        ${CMAKE_SOURCE_DIR}/include/tanh.h
-        ${CMAKE_SOURCE_DIR}/include/atan2.h
-        ${CMAKE_SOURCE_DIR}/include/cos.h
-        ${CMAKE_SOURCE_DIR}/include/exp.h
-        ${CMAKE_SOURCE_DIR}/include/identity.h
-        ${CMAKE_SOURCE_DIR}/include/inv.h
-        ${CMAKE_SOURCE_DIR}/include/log.h
-        ${CMAKE_SOURCE_DIR}/include/sincos.h
-        ${CMAKE_SOURCE_DIR}/include/sin.h
-        ${CMAKE_SOURCE_DIR}/include/sqrt.h
-        ${CMAKE_SOURCE_DIR}/include/tan.h
-        ${CMAKE_SOURCE_DIR}/include/vdtcore_common.h
-        ${CMAKE_SOURCE_DIR}/include/vdtMath.h
-        DESTINATION include/vdt)

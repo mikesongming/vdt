@@ -1,10 +1,10 @@
 # Define this directory's flags:
 add_compile_options(${vdt_diag_cxx_flags})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${vdt_BIN_DIR} )
 
-include_directories ( ${CMAKE_SOURCE_DIR}/include/diagnostic )
-include_directories ( ${CMAKE_SOURCE_DIR}/include )
+include_directories ( ${vdt_INCLUDE_DIR} )
+include_directories ( ${vdt_INCLUDE_DIR}/diagnostic )
 
 # Benchmarks
 add_exe_and_link ( vdtPerfBenchmark vdtPerfBenchmark.cpp ${LIBTIMING})
