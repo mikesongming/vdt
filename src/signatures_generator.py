@@ -130,11 +130,10 @@ def get_impl_file():
 
 
 def create_impl(preloadSignatures, outdir):
-  ofile = open(os.path.join(outdir, VDT_VECTOR_IMPL), 'w')
-  ofile.write(get_impl_file())
-  if preloadSignatures:
-    ofile.write(create_preload_signatures())
-  ofile.close()
+  with open(os.path.join(outdir, VDT_VECTOR_IMPL), 'w') as ofile:
+    ofile.write(get_impl_file())
+    if preloadSignatures:
+      ofile.write(create_preload_signatures())
 
 #------------------------------------------------------------------
 

@@ -1,6 +1,5 @@
 # Define this directory's flags:
-string(APPEND CMAKE_CXX_FLAGS ${vdt_diag_cxx_flags})
-cmake_print_variables(CMAKE_CXX_FLAGS)
+add_compile_options(${vdt_diag_cxx_flags})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin )
 

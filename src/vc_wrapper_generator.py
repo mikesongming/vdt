@@ -4,6 +4,9 @@
 Generates vc wrapper - both header and .cc file
 """
 
+from optparse import OptionParser
+import os
+
 RESTRICT="__restrict__"
 VC_PREF="vc_"
 VC_SCOPE_OP="Vc::"
@@ -152,20 +155,26 @@ def get_impl_file():
 		  
 #------------------------------------------------------------------
 
-def create_header():
-  ofile=file(VC_WRAPPER_HEADER,'w')
-  ofile.write(get_header_file())
-  ofile.close()
-  
+
+def create_header(outdir):
+  with open(os.path.join(outdir, VC_WRAPPER_HEADER), 'w') as ofile:
+    ofile.write(get_header_file())
+
 #------------------------------------------------------------------
 
-def create_impl():
-  ofile=file(VC_WRAPPER_IMPL,'w')
-  ofile.write(get_impl_file())
-  ofile.close()
+
+def create_impl(outdir):
+  with open(os.path.join(outdir, VC_WRAPPER_IMPL), 'w') as ofile:
+    ofile.write(get_impl_file())
 
 #------------------------------------------------------------------
   
 if __name__ == "__main__":
-  create_header()
-  create_impl()
+  parser = OptionParser(usage="usage: %prog [options]")
+  parser.add_option("-o",
+                    dest="outdir",
+                    default="./",
+                    help="specify output directory")
+  (options, args) = parser.parse_args()
+  create_header(outdir=options.outdir)
+  create_impl(outdir=options.outdir)

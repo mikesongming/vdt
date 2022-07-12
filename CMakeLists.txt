@@ -22,7 +22,7 @@ option( FMA "Use FMA instruction set (default cache entry: OFF)" OFF)
 option( USERFLAGS "Pass arbitrary flags to the compiler")
 option( SSE "Use SSE instruction set (default cache entry: ON)" ON)
 option( NEON "Use NEON instruction set (default cache entry: OFF)" OFF)
-option( BUILD_SHARED_LIBS "Build libraries as SHARED instead of STATIC (default cache entry: ON)" ON)
+option( vdt_BUILD_SHARED_LIBS "Build libraries as SHARED instead of STATIC (default cache entry: ON)" ON)
 option( PRELOAD "Create in the library the symbols to preload the library (default cache entry: OFF)" OFF)
 option( USE_VC "Use Vc library - requires symlink to Vc from ${CMAKE_SOURCE_DIR} (default cache entry: OFF)" OFF)
 option( DEBUG "Compile library with debug symbols (default is OFF)" OFF)
@@ -56,34 +56,34 @@ endif()
 # SIMD and FMA instructions set-------------------------------------------------
 if (NEON)
   message(STATUS "Using NEON instructions!")
-  string(APPEND vdt_common_cxx_flags " -mfpu=neon")
+  list(APPEND vdt_common_cxx_flags "-mfpu=neon")
 else()
   if (SSE AND (NOT (AVX OR AVX2) ))
     message(STATUS "Using SSE instructions!")
-    string(APPEND vdt_common_cxx_flags " -msse")
+    list(APPEND vdt_common_cxx_flags "-msse")
   endif ()
 
   if (AVX AND (NOT AVX2))
     message(STATUS "Using AVX instructions!")
     if(CMAKE_COMPILER_IS_ICC)
-      string(APPEND vdt_common_cxx_flags " -xavx")
+      list(APPEND vdt_common_cxx_flags "-xavx")
     else()
-      string(APPEND vdt_common_cxx_flags " -mavx")
+      list(APPEND vdt_common_cxx_flags "-mavx")
     endif()
   endif ()
 
   if (AVX2)
     message(STATUS "Using AVX2 instructions!")
     if(CMAKE_COMPILER_IS_ICC)
-      string(APPEND vdt_common_cxx_flags " -xavx2")
+      list(APPEND vdt_common_cxx_flags "-xavx2")
     else()
-      string(APPEND vdt_common_cxx_flags " -mavx2")
+      list(APPEND vdt_common_cxx_flags "-mavx2")
     endif()
   endif ()
 
   if (FMA)
     message(STATUS "Using FMA instructions!")
-    string(APPEND vdt_common_cxx_flags " -mfma")
+    list(APPEND vdt_common_cxx_flags "-mfma")
   endif ()
 
 endif()
@@ -91,9 +91,9 @@ endif()
 # To use svml at CERN ----------------------------------------------------------
 if (SVML)
   message (STATUS "Linking SVML library")
-  string(APPEND vdt_common_cxx_flags
-    " -mveclibabi=svml -lsvml -lirc"
-    " -L/afs/cern.ch/sw/IntelSoftware/linux/x86_64/Compiler/11.1/072/lib/intel64/")
+  list(APPEND vdt_common_cxx_flags
+    "-mveclibabi=svml" "-lsvml" "-lirc"
+    "-L/afs/cern.ch/sw/IntelSoftware/linux/x86_64/Compiler/11.1/072/lib/intel64/")
 endif (SVML)
 
 # Vc setup ---------------------------------------------------------------------
@@ -128,7 +128,7 @@ if(DIAG)
   set (LIBTIMING "rt")
   # do not set it if on macOS
   if (APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
-    set (LIBTIMINGAPPLE " -framework Carbon")
+    set (LIBTIMINGAPPLE "-framework Carbon")
   endif ()
 endif(DIAG)
 
@@ -136,20 +136,20 @@ endif(DIAG)
 # Compiler optimisations
 
 if (NOT CMAKE_COMPILER_IS_ICC)
-  string(APPEND vdt_common_cxx_flags " -Ofast")
+  list(APPEND vdt_common_cxx_flags "-Ofast")
 endif()
 
 if (${COMP_IS_GCC})
    set (VECTORIZER_VERBOSITY "-ftree-vectorizer-verbose=0")
-   string(APPEND vdt_common_cxx_flags " --param vect-max-version-for-alias-checks=50"
-   " --param inline-unit-growth=150")   
+   list(APPEND vdt_common_cxx_flags "--param vect-max-version-for-alias-checks=50"
+   "--param inline-unit-growth=150")   
 endif()   
 
-set (VERBOSITY_OPT " -Winline")
+set (VERBOSITY_OPT "-Winline")
 
 # set it for clang until it understands __always_inline
 if (${COMP_IS_CLANG})
-  string(APPEND vdt_common_cxx_flags " -D__extern_always_inline=inline")
+  list(APPEND vdt_common_cxx_flags "-D__extern_always_inline=inline")
 endif()
 
 # compiler dependent changes ---------------------------------------------------
@@ -157,21 +157,25 @@ if(${COMP_IS_ICC})
   set (VECTORIZER_VERBOSITY "")
 endif()
 
-string(APPEND vdt_common_cxx_flags " -W" " -Wall" " -Werror"
-  " -Wno-error=unused-parameter")
+list(APPEND vdt_common_cxx_flags "-W" "-Wall" "-Werror"
+  "-Wno-error=unused-parameter")
 
 if (DEBUG)
   message(STATUS "Adding debugging symbols")
-  string(APPEND vdt_common_cxx_flags " -g")
+  list(APPEND vdt_common_cxx_flags "-g")
 endif ()
 
 set (COMMON_FLAGS "${PACKED_INSTR}")
 if (USERFLAGS)
-  string(APPEND vdt_common_cxx_flags ${USERFLAGS})
+  list(APPEND vdt_common_cxx_flags ${USERFLAGS})
 endif()
 
-string(APPEND vdt_lib_cxx_flags ${VERBOSITY_OPT} ${VECTORIZER_VERBOSITY} ${vdt_common_cxx_flags})
-string(APPEND vdt_diag_cxx_flags ${LIBTIMINGAPPLE} ${vdt_common_cxx_flags})
+list(APPEND vdt_lib_cxx_flags ${VERBOSITY_OPT} ${VECTORIZER_VERBOSITY} "${vdt_common_cxx_flags}")
+list(APPEND vdt_diag_cxx_flags ${LIBTIMINGAPPLE} "${vdt_common_cxx_flags}")
+
+cmake_print_variables(vdt_common_cxx_flags)
+cmake_print_variables(vdt_lib_cxx_flags)
+cmake_print_variables(vdt_diag_cxx_flags)
 
 # Locations ====================================================================
 
