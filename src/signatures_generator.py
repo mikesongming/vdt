@@ -11,129 +11,115 @@ import os
 
 RESTRICT = "__restrict__"
 
-LIBM_FUNCTIONS_LIST = ["asin",
-                       "atan",
-                       "atan2",
-                       "acos",
-                       "cos",
-                       "exp",
+LIBM_FUNCTIONS_LIST = ["exp",
                        "log",
                        "sin",
+                       "cos",
                        "tan",
-                       "tanh"]
+                       "tanh",
+                       "asin",
+                       "acos",
+                       "atan",
+                       "atan2"]
 
 FUNCTIONS_LIST = LIBM_FUNCTIONS_LIST +\
     ["isqrt",
      "inv",
      "identity",
      "identity2D",
+     "fast_exp",
+     "fast_log",
+     "fast_sin",
+     "fast_cos",
+     "fast_tan",
+     "fast_tanh",
      "fast_asin",
      "fast_acos",
      "fast_atan",
      "fast_atan2",
-     "fast_cos",
-     "fast_exp",
      "fast_inv",
      "fast_approx_inv",
-     "fast_log",
-     "fast_sin",
      "fast_isqrt",
-     "fast_approx_isqrt",
-     "fast_tan",
-     "fast_tanh"]
+     "fast_approx_isqrt"]
 
 VDT_VECTOR_HEADER = 'vdtMath.h'
 VDT_VECTOR_IMPL = 'vdtMath_signatures.cc'
 
 #------------------------------------------------------------------
 
+def create_vector_signature(fcn_name, type, preload=False):
+  
+  if type == "float":           # single precision
+    vfcn_name = fcn_name + "fv"
+    impl_fcn_name = fcn_name + "f"
+  elif type == "double":        # double precision
+    vfcn_name = fcn_name + "v"
+    impl_fcn_name = fcn_name
+  else:
+    raise ValueError("Unknown type: " + type)
 
-def create_preload_signatures():
-  code = "// Automatically generated signatures for preload\n\n"
-  for fpSuffix, fpType in (("", "double"), ("f", "float"), ("", "float")):
-    for function in LIBM_FUNCTIONS_LIST:
-      libmFunction = "%s%s" % (function, fpSuffix)
-      vdtFunction = "vdt::fast_%s" % (libmFunction)
-      if fpSuffix == "" and fpType == "float":
-        vdtFunction += "f"
-      if function == "atan2":
-        code += "%s %s(%s x, %s y){return %s(x,y);};\n" % (fpType,
-                                                           libmFunction, fpType, fpType, vdtFunction)
-      else:
-        code += "%s %s(%s x){return %s(x);};\n" % (fpType,
-                                                   libmFunction, fpType, vdtFunction)
-  return code
-
-#------------------------------------------------------------------
-
-
-def create_vector_signature(fcn_name, is_double=False, is_impl=False):
-  # For single precision
-  suffix = "fv"
-  float_suffix = "f"
-  type = "float"
-  if is_double:
-    suffix = "v"
-    type = "double"
-    float_suffix = ""
-  prefix = ""
-  vfcn_name = "%s%s" % (fcn_name, suffix)
-  in_data_type = "%s const * %s" % (type, RESTRICT)
-  out_data_type = "%s* %s" % (type, RESTRICT)
-  new_fcn_name = "%s%s" % (prefix, fcn_name)
-  code = "void %s%s(const uint32_t size, %s iarray, %s oarray)" % (
-      new_fcn_name, suffix, in_data_type, out_data_type)
+  if preload and fcn_name in LIBM_FUNCTIONS_LIST:
+    impl_fcn_name = "fast_" + impl_fcn_name
+  in_data_type = f"{type} const * {RESTRICT}"
+  out_data_type = f"{type}* {RESTRICT}"
+  code = []
 
   # Special case
   if "atan2" in fcn_name or "identity2D" in fcn_name:
-      code = "void %s%s(const uint32_t size, %s iarray1, %s iarray2, %s oarray)" % (
-          new_fcn_name, suffix, in_data_type, in_data_type, out_data_type)
-
-  if is_impl:
-    impl_code = "{\n" +\
-        "  for (uint32_t i=0;i<size;++i)\n" +\
-        "    oarray[i]=%s%s(iarray[i]);\n" % (new_fcn_name, float_suffix) +\
-        "}\n\n"
-    if "atan2" in fcn_name or "identity2D" in fcn_name:
-      impl_code = "{\n" +\
-          "  for (uint32_t i=0;i<size;++i)\n" +\
-          "    oarray[i]=%s%s(iarray1[i],iarray2[i]);\n" % (new_fcn_name, float_suffix) +\
-          "}\n\n"
-    code += impl_code
+    code.append(
+      f"void {vfcn_name}(const uint32_t size, {in_data_type} iarray1, {in_data_type} iarray2, {out_data_type} oarray)"
+    )
+    impl_code = [
+      "{",
+      "  for (uint32_t i=0;i<size;++i)",
+      f"    oarray[i]={impl_fcn_name}(iarray1[i],iarray2[i]);",
+      "}\n"
+    ]
   else:
-    code += ";\n"
+    code.append(
+      f"void {vfcn_name}(const uint32_t size, {in_data_type} iarray, {out_data_type} oarray)"
+    )
+    impl_code = [
+      "{",
+      "  for (uint32_t i=0;i<size;++i)",
+      f"    oarray[i]={impl_fcn_name}(iarray[i]);",
+      "}\n"
+    ]
+
+  code += impl_code
+  return code
+
+#------------------------------------------------------------------
+
+def create_vector_signatures(preload=False):
+  code = []
+
+  code.append("// Double Precision")
+  for fcn_name in FUNCTIONS_LIST:
+    code += create_vector_signature(fcn_name, "double", preload)
+
+  code.append("// Single Precision")
+  for fcn_name in FUNCTIONS_LIST:
+    code += create_vector_signature(fcn_name, "float",  preload)
+
   return code
 
 #------------------------------------------------------------------
 
 
-def create_vector_signatures(is_impl=False):
-  code = "namespace vdt{\n"
-  for is_double in (True, False):
-    for fcn_name in sorted(FUNCTIONS_LIST):
-      code += create_vector_signature(fcn_name, is_double, is_impl)
-  code += "} // end of vdt namespace"
-  return code
+def create_impl(preload: bool, outdir):
+  code = ["// Automatically generated\n",
+      f"#include \"{VDT_VECTOR_HEADER}\"\n",
+      "namespace vdt{",
+    ]
+  code += create_vector_signatures(preload=preload)
+  code += [
+      "} // end of vdt namespace",
+      ""  # the final newline
+    ]
 
-#------------------------------------------------------------------
-
-
-def get_impl_file():
-  code = "// Automatically generated\n" +\
-      '#include "%s"\n' % VDT_VECTOR_HEADER +\
-      create_vector_signatures(is_impl=True) +\
-      "\n"  # the final newline
-
-  return code
-
-#------------------------------------------------------------------
-
-
-def create_impl(preloadSignatures, outdir):
   with open(os.path.join(outdir, VDT_VECTOR_IMPL), 'w') as ofile:
-    ofile.write(get_impl_file())
-    if preloadSignatures:
-      ofile.write(create_preload_signatures())
+    ofile.write("\n".join(code))
 
 #------------------------------------------------------------------
 
@@ -150,5 +136,5 @@ if __name__ == "__main__":
                     default="./",
                     help="specify output directory")
   (options, args) = parser.parse_args()
-  create_impl(preloadSignatures=options.preload_flag,
+  create_impl(preload=options.preload_flag,
               outdir=options.outdir)

@@ -4,3 +4,6 @@ src/vdtMath_signatures.cc
 include/externalLibcfg.h
 
 .vscode/
+*__performance_benchmark.txt
+*__response.txt
+*.log
