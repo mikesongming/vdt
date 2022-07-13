@@ -32,8 +32,6 @@ if(USE_VC)
     )
 endif(USE_VC)
 
-configure_file( ${vdt_INCLUDE_DIR}/externalLibcfg.h.in ${vdt_INCLUDE_DIR}/externalLibcfg.h)
-
 #========================================================================================
 # Rules for making the so library with the vector and libm-like signatures
 
@@ -43,8 +41,6 @@ if(vdt_BUILD_SHARED_LIBS)
 else()
   add_library(vdt STATIC ${CMAKE_CURRENT_LIST_DIR}/vdtMath_signatures.cc)
 endif()
-
-target_include_directories(vdt PUBLIC ${vdt_INCLUDE_DIR})
 
 # Build Vc wrapper (without c++11)
 if(USE_VC)

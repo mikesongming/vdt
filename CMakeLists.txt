@@ -1,9 +1,9 @@
 # VDT Math Library
 cmake_minimum_required(VERSION 3.15)
-project (Vdt)
+project (Vdt VERSION 0.4.5)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+# set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 include(CMakePrintHelpers)
 
@@ -180,8 +180,14 @@ cmake_print_variables(vdt_diag_cxx_flags)
 #-------------------------------------------------------------------------------
 
 # Positions
-set(vdt_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(vdt_BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
+configure_file( externalLibcfg.h.in include/externalLibcfg.h)
+
+include_directories(include include/diagnostic
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
+
+#-------------------------------------------------------------------------------
 
 add_subdirectory( src )
 if (DIAG)
@@ -191,14 +197,28 @@ else(DIAG)
   message("DIAG option is now off, building library only")
 endif(DIAG)
 
-#-------------------------------------------------------------------------------
-# Installation
+# -------------------------------------------------------------------------------
+# Rules of installation
 
 # Installation of the lib
-install(TARGETS vdt  
-        DESTINATION lib)
+install(TARGETS vdt
+  EXPORT vdtTargets
+  DESTINATION lib)
 
-# Install location
+# target configurations for install-tree
+install(EXPORT vdtTargets
+  NAMESPACE vdt::
+  FILE vdtTargets.cmake
+  DESTINATION lib/cmake/vdt
+)
+
+# target configurations for build-tree
+export(EXPORT vdtTargets
+  NAMESPACE vdt::
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/vdtTargets.cmake"
+)
+
+# Install headers
 INSTALL(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/include/asin.h
         ${CMAKE_CURRENT_SOURCE_DIR}/include/atan.h
