@@ -4,7 +4,7 @@ add_compile_options(${vdt_lib_cxx_flags})
 # We need Python for the following.
 find_package (Python COMPONENTS Interpreter REQUIRED)
 
-if(vdt_BUILD_SHARED_LIBS)
+if(BUILD_SHARED_LIBS)
   message(STATUS "Libraries are configured as: SHARED")
 else()
   message(STATUS "Libraries are configured as: STATIC")
@@ -36,11 +36,20 @@ endif(USE_VC)
 # Rules for making the so library with the vector and libm-like signatures
 
 # # The library
-if(vdt_BUILD_SHARED_LIBS)
-  add_library(vdt SHARED ${CMAKE_CURRENT_LIST_DIR}/vdtMath_signatures.cc)
-else()
-  add_library(vdt STATIC ${CMAKE_CURRENT_LIST_DIR}/vdtMath_signatures.cc)
-endif()
+add_library( vdt )
+add_library( vdt::vdt ALIAS vdt )   # necessory for fetch_content imported target vdt::vdt
+target_sources(vdt
+  PRIVATE ${CMAKE_CURRENT_LIST_DIR}/vdtMath_signatures.cc
+)
+target_include_directories( vdt
+  PUBLIC $<BUILD_INTERFACE:${vdt_INCLUDE_DIR}>$<INSTALL_INTERFACE:include/vdt>
+)
+set_target_properties( vdt PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  PUBLIC_HEADER "${vdt_HEADERS}"
+  VERSION "${PROJECT_VERSION}"
+  SOVERSION "${ABI_VERSION}"
+)
 
 # Build Vc wrapper (without c++11)
 if(USE_VC)

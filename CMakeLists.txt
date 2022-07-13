@@ -1,11 +1,9 @@
 # VDT Math Library
 cmake_minimum_required(VERSION 3.15)
-project (Vdt VERSION 0.4.5)
+project (Vdt VERSION 0.5.0)
 
 set(CMAKE_CXX_STANDARD 11)
 # set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-include(CMakePrintHelpers)
 
 #-------------------------------------------------------------------------------
 # Include the defaults
@@ -22,7 +20,7 @@ option( FMA "Use FMA instruction set (default cache entry: OFF)" OFF)
 option( USERFLAGS "Pass arbitrary flags to the compiler")
 option( SSE "Use SSE instruction set (default cache entry: ON)" ON)
 option( NEON "Use NEON instruction set (default cache entry: OFF)" OFF)
-option( vdt_BUILD_SHARED_LIBS "Build libraries as SHARED instead of STATIC (default cache entry: ON)" ON)
+option( BUILD_SHARED_LIBS "Build libraries as SHARED instead of STATIC (default cache entry: OFF)" OFF)
 option( PRELOAD "Create in the library the symbols to preload the library (default cache entry: OFF)" OFF)
 option( USE_VC "Use Vc library - requires symlink to Vc from ${CMAKE_SOURCE_DIR} (default cache entry: OFF)" OFF)
 option( DEBUG "Compile library with debug symbols (default is OFF)" OFF)
@@ -173,25 +171,42 @@ endif()
 list(APPEND vdt_lib_cxx_flags ${VERBOSITY_OPT} ${VECTORIZER_VERBOSITY} "${vdt_common_cxx_flags}")
 list(APPEND vdt_diag_cxx_flags ${LIBTIMINGAPPLE} "${vdt_common_cxx_flags}")
 
-cmake_print_variables(vdt_common_cxx_flags)
-cmake_print_variables(vdt_lib_cxx_flags)
-cmake_print_variables(vdt_diag_cxx_flags)
-
 #-------------------------------------------------------------------------------
 
 # Positions
-set(vdt_BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(vdt_BIN_DIR ${CMAKE_CURRENT_LIST_DIR}/bin)
+set(vdt_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
 
-configure_file( externalLibcfg.h.in include/externalLibcfg.h)
-
-include_directories(include include/diagnostic
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
+# Public Headers
+list(APPEND vdt_HEADERS
+  include/asin.h
+  include/atan.h
+  include/tanh.h
+  include/atan2.h
+  include/cos.h
+  include/exp.h
+  include/identity.h
+  include/inv.h
+  include/log.h
+  include/sincos.h
+  include/sin.h
+  include/sqrt.h
+  include/tan.h
+  include/vdtcore_common.h
+  include/vdtMath.h
+)
 
 #-------------------------------------------------------------------------------
 
 add_subdirectory( src )
+
 if (DIAG)
     message("DIAG option is now on, building diagnostic programs")
+
+    configure_file( externalLibcfg.h.in include/externalLibcfg.h)
+    include_directories(include include/diagnostic
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
+
     add_subdirectory( progs )
 else(DIAG)
   message("DIAG option is now off, building library only")
@@ -199,11 +214,15 @@ endif(DIAG)
 
 # -------------------------------------------------------------------------------
 # Rules of installation
+include(GNUInstallDirs)
 
 # Installation of the lib
 install(TARGETS vdt
   EXPORT vdtTargets
-  DESTINATION lib)
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vdt
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # target configurations for install-tree
 install(EXPORT vdtTargets
@@ -215,24 +234,25 @@ install(EXPORT vdtTargets
 # target configurations for build-tree
 export(EXPORT vdtTargets
   NAMESPACE vdt::
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/vdtTargets.cmake"
+  FILE vdtTargets.cmake
 )
 
-# Install headers
-INSTALL(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/asin.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/atan.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/tanh.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/atan2.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/cos.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/exp.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/identity.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/inv.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/log.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/sincos.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/sin.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/sqrt.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/tan.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/vdtcore_common.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/vdtMath.h
-        DESTINATION include/vdt)
+include( CMakePackageConfigHelpers )
+
+configure_package_config_file(vdtConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/vdtConfig.cmake
+  INSTALL_DESTINATION lib/cmake/vdt
+  NO_SET_AND_CHECK_MACRO
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/vdtConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMinorVersion )
+
+install (
+  FILES 
+    ${CMAKE_CURRENT_BINARY_DIR}/vdtConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/vdtConfigVersion.cmake
+  DESTINATION lib/cmake/vdt)

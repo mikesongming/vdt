@@ -59,7 +59,7 @@ Other options for Cmake are available to steer the creation of the makefile:
 * Enable AVX extensions `-D AVX=1` 
 * Enable NEON extensions on ARM `-D NEON=1`
 * Benchmarking tools and unit tests (requires C++11 support by the compiler) `-D DIAG=1`
-* Build static library `-D vdt_BUILD_SHARED_LIBS=0`
+* Build shared library `-D BUILD_SHARED_LIBS=1`
 * Prepare the library to be pre-loaded in order to replace the calls to the default math lib at runtime `-D PRELOAD=1`
 
 ## Supported Compilers
