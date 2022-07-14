@@ -48,7 +48,6 @@ set_target_properties( vdt PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   PUBLIC_HEADER "${vdt_HEADERS}"
   VERSION "${PROJECT_VERSION}"
-  SOVERSION "${ABI_VERSION}"
 )
 
 # Build Vc wrapper (without c++11)
